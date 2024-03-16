@@ -15,6 +15,7 @@ class YouTubePlayer:
         yt = YouTube(url)
         audio = yt.streams.filter(only_audio=True).order_by('abr').first()
         audio_url = audio.url
+        self.currentAudioTime = 0
 
         # Using VLC to play the audio
         self.player = vlc.MediaPlayer(audio_url)
@@ -61,21 +62,31 @@ class YouTubePlayer:
     @staticmethod
     def retrieve_all_playlist_videos(playlist_url):
         playlist = Playlist(playlist_url)
+        playlist_title = playlist.info['info']['title']
+        playlist_length = playlist.info['info']['videoCount']
+        
+        videos_info = []
+        
+        playlist_info = {
+            'playlist_title': playlist_title,
+            'playlist_length': playlist_length
+        }
 
-        videos = []
-
+        videos_info.append(playlist_info)
+        
         while playlist.hasMoreVideos:
             playlist.getNextVideos()
-
+        
         for video in playlist.videos:
             video_info = {
                 'title': video['title'],
                 'link': video['link'],
                 'duration': video['duration']
             }
-            videos.append(video_info)
+            videos_info.append(video_info)
+        
+        return videos_info
 
-        return videos
 
     def startPlayer(self, url):
         stream_thread = threading.Thread(target=self.streamAudio, args=(url,))
@@ -83,3 +94,5 @@ class YouTubePlayer:
 
         stream_thread.start()
         keys_thread.start()
+
+print(YouTubePlayer.retrieve_all_playlist_videos('https://www.youtube.com/playlist?list=PLjUfzvZPRClxqFW-VC4Cr23og-0vo5LAN'))
